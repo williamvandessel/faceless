@@ -1,4 +1,4 @@
-// Digitale Ouroborossen — extra marge aan randen
+// Digitale Ouroborossen — Balanced Safe Margin Edition
 
 let ouroborossen = [];
 let totalOuro = 180;
@@ -18,7 +18,7 @@ function setup() {
 }
 
 function draw() {
-  background(0, 65); 
+  background(0, 65);
   for (let o of ouroborossen) {
     o.update();
     o.display();
@@ -38,26 +38,27 @@ class Ouroboros {
 
     this.spacing = int(random(1, 3));
 
-    // size distribution
+    // size categories
     const r = random();
-    let scaleFactor;
-    if (r < 0.35) scaleFactor = random(0.04, 0.07);
-    else if (r < 0.80) scaleFactor = random(0.07, 0.12);
-    else scaleFactor = random(0.12, 0.22);
-
-    this.scale = scaleFactor * min(width, height);
+    if (r < 0.35) {
+      this.scale = random(0.04, 0.07) * min(width, height); // small
+      this.marginMultiplier = 1.2;
+    } else if (r < 0.80) {
+      this.scale = random(0.07, 0.12) * min(width, height); // medium
+      this.marginMultiplier = 1.7;
+    } else {
+      this.scale = random(0.12, 0.22) * min(width, height); // large
+      this.marginMultiplier = 2.2;
+    }
 
     this.baseAlpha = random(60, 120);
 
-    // 🔥 EXTRA VEILIGE MARGE
-    const baseMargin = this.scale * 2.3;  
-    this.margin = baseMargin;
+    // balanced margin
+    this.margin = this.scale * this.marginMultiplier;
 
-    // veilige startpositie rekening houdend met hele ∞-vorm
     this.cx = random(this.margin, width - this.margin);
     this.cy = random(this.margin, height - this.margin);
 
-    // drift
     this.vx = random(-0.08, 0.08);
     this.vy = random(-0.06, 0.06);
 
@@ -67,31 +68,42 @@ class Ouroboros {
   update() {
     const a = this.scale;
 
-    // positie van karakter op de ∞ vorm
     const x = a * sin(this.t + this.phase) + this.cx;
     const y = (a / 2) * sin(2 * (this.t + this.phase)) + this.cy;
 
-    // trail
     if (frameCount % this.spacing === 0) {
       this.trail.push({ x, y, bit: random() > 0.5 ? "1" : "0" });
       if (this.trail.length > this.trailLength) this.trail.shift();
     }
 
-    // drift
     this.cx += this.vx;
     this.cy += this.vy;
 
-    // 🔥 reflectie met VERGROOTTE marge
-    if (this.cx < this.margin || this.cx > width - this.margin) this.vx *= -1;
-    if (this.cy < this.margin || this.cy > height - this.margin) this.vy *= -1;
+    // margin bounce
+    if (this.cx < this.margin) {
+      this.cx = this.margin;
+      this.vx *= -1;
+    }
+    if (this.cx > width - this.margin) {
+      this.cx = width - this.margin;
+      this.vx *= -1;
+    }
 
-    // update tijd
+    if (this.cy < this.margin) {
+      this.cy = this.margin;
+      this.vy *= -1;
+    }
+    if (this.cy > height - this.margin) {
+      this.cy = height - this.margin;
+      this.vy *= -1;
+    }
+
     this.t += this.speed;
     this.fadeCycle += this.fadeSpeed;
   }
 
   display() {
-    const fadeFactor = map(sin(this.fadeCycle), -1, 1, 0.15, 1.0);
+    const fadeFactor = map(sin(this.fadeCycle), -1, 1, 0.2, 1);
 
     for (let i = 0; i < this.trail.length; i++) {
       const c = this.trail[i];
