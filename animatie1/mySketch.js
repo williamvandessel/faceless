@@ -1,4 +1,4 @@
-// Digitale Ouroborossen — sneller zelf-uitwissen + meer grote ∞-vormen
+// Digitale Ouroborossen — extra marge aan randen
 
 let ouroborossen = [];
 let totalOuro = 180;
@@ -18,7 +18,7 @@ function setup() {
 }
 
 function draw() {
-  background(0, 65); // meer fade → minder langdurige sporen
+  background(0, 65); 
   for (let o of ouroborossen) {
     o.update();
     o.display();
@@ -30,41 +30,34 @@ class Ouroboros {
     this.t = random(TWO_PI);
     this.speed = random(0.05, 0.09);
 
-    // 🔥 kortere trails → sneller zelf-uitwissen
     this.trail = [];
-    this.trailLength = int(random(50, 120)); // was 120–240 → veel korter
+    this.trailLength = int(random(50, 120));
 
     this.fadeCycle = random(TWO_PI);
-
-    // 🔥 sneller fading → sporen verdwijnen sneller
-    this.fadeSpeed = random(0.015, 0.025); // was 0.006–0.012
+    this.fadeSpeed = random(0.015, 0.025);
 
     this.spacing = int(random(1, 3));
 
-    // --------------------------------------------------------
-    // 🔥 NIEUWE GROOTTEVERDELING
-    // 35% klein, 45% medium, 20% groot
-    // --------------------------------------------------------
+    // size distribution
     const r = random();
     let scaleFactor;
-
-    if (r < 0.35) scaleFactor = random(0.04, 0.07);       // klein → duidelijk zichtbaar
-    else if (r < 0.80) scaleFactor = random(0.07, 0.12);  // medium → groter dan vroeger
-    else scaleFactor = random(0.12, 0.22);                // groot → tot 22% van schermhoogte
+    if (r < 0.35) scaleFactor = random(0.04, 0.07);
+    else if (r < 0.80) scaleFactor = random(0.07, 0.12);
+    else scaleFactor = random(0.12, 0.22);
 
     this.scale = scaleFactor * min(width, height);
 
-    // transparantie hoger → veel minder overlappen
     this.baseAlpha = random(60, 120);
 
-    // marge per grootte
-    const margin = this.scale * 1.5;
+    // 🔥 EXTRA VEILIGE MARGE
+    const baseMargin = this.scale * 2.3;  
+    this.margin = baseMargin;
 
-    // veilige startpositie
-    this.cx = random(margin, width - margin);
-    this.cy = random(margin, height - margin);
+    // veilige startpositie rekening houdend met hele ∞-vorm
+    this.cx = random(this.margin, width - this.margin);
+    this.cy = random(this.margin, height - this.margin);
 
-    // zachte drift
+    // drift
     this.vx = random(-0.08, 0.08);
     this.vy = random(-0.06, 0.06);
 
@@ -73,10 +66,12 @@ class Ouroboros {
 
   update() {
     const a = this.scale;
+
+    // positie van karakter op de ∞ vorm
     const x = a * sin(this.t + this.phase) + this.cx;
     const y = (a / 2) * sin(2 * (this.t + this.phase)) + this.cy;
 
-    // spoor genereren
+    // trail
     if (frameCount % this.spacing === 0) {
       this.trail.push({ x, y, bit: random() > 0.5 ? "1" : "0" });
       if (this.trail.length > this.trailLength) this.trail.shift();
@@ -86,23 +81,21 @@ class Ouroboros {
     this.cx += this.vx;
     this.cy += this.vy;
 
-    // reflectie met marge
-    const margin = this.scale * 1.5;
-    if (this.cx < margin || this.cx > width - margin) this.vx *= -1;
-    if (this.cy < margin || this.cy > height - margin) this.vy *= -1;
+    // 🔥 reflectie met VERGROOTTE marge
+    if (this.cx < this.margin || this.cx > width - this.margin) this.vx *= -1;
+    if (this.cy < this.margin || this.cy > height - this.margin) this.vy *= -1;
 
+    // update tijd
     this.t += this.speed;
     this.fadeCycle += this.fadeSpeed;
   }
 
   display() {
-    // fade-out wordt sterker door snelle fadeCycle
     const fadeFactor = map(sin(this.fadeCycle), -1, 1, 0.15, 1.0);
 
     for (let i = 0; i < this.trail.length; i++) {
       const c = this.trail[i];
       let alpha = map(i, 0, this.trail.length - 1, 0, this.baseAlpha);
-
       alpha *= fadeFactor;
       fill(255, alpha);
       text(c.bit, c.x, c.y);
